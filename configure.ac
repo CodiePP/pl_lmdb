@@ -60,8 +60,8 @@ if [[ $ARCH = "Darwin" ]]; then
   else
     AC_MSG_FAILURE([cannot find SWI Prolog])
   fi
-  LIBLMDB_BASE=/usr/local/opt/liblmdb
-  if test -d "${LIBCRYPTO_BASE}"; then
+  LIBLMDB_BASE=/usr/local/opt/lmdb
+  if test -d "${LIBLMDB_BASE}"; then
     MACHINE=$(uname -m)
     LMDB_CFLAGS="-I${LIBLMDB_BASE}/include"
     LMDB_LIBS="-L${LIBLMDB_BASE}/lib -llmdb"

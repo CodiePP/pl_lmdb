@@ -10,6 +10,7 @@ configure
 *.log
 Makefile
 
+*.mdb
 *~
 
 config.status
