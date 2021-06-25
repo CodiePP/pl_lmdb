@@ -300,7 +300,6 @@ foreign_t swi_lmdb_dbi_open(term_t in_txn, term_t in_name, term_t in_flags, term
     size_t s_len;
     if (!PL_get_nchars(in_name, &s_len, &s_name, CVT_ATOM|CVT_STRING|CVT_LIST)) { PL_fail; }
 
-    printf("mdb_dbi_open: %s (%ld)\n", s_name, s_len);
     long i_flags;
     if (!PL_get_long(in_flags, &i_flags)) { PL_fail; }
 

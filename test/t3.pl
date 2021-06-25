@@ -20,7 +20,7 @@ run_test :-
   format("LMDB version: ~a~n",[V]),
   lmdb_env_create(Env),
   lmdb_env_set_maxdbs(Env, 42),
-  MapSz is 2^30 * 1, % 1 GB
+  MapSz is 2^20 * 100, % 100 MB
   lmdb_env_set_mapsize(Env, MapSz),
   lmdb_env_flags(['MDB_WRITEMAP'], EnvFlags),
   lmdb_env_open(Env, '.', EnvFlags, 0o0640),

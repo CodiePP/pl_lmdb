@@ -14,6 +14,28 @@ then run
 ```
 then call `make swi`
 
-## examples
+## installation
 
+```sh
+mkdir -p ${HOME}/lib/sbcl
+cp src/lmdb.qlf ~/lib/sbcl/
+cp pllmdb-* ~/lib/sbcl/pllmdb
+```
+
+add to the search path for SWI Prolog:
+```sh
+echo ":- assertz(file_search_path(sbcl,'${HOME}/lib/sbcl'))." >> ${HOME}/.config/swi-prolog/init.pl
+```
+
+## tests
+
+this test will populate a database with one million of records:
+```sh
+swipl -l test/t3.pl -g test
+```
+
+this test reads them all back and verifies them:
+```sh
+swipl -l test/t4.pl -g test
+```
 
