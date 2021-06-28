@@ -329,15 +329,27 @@ foreign_t swi_lmdb_get(term_t in_txn, term_t in_dbi, term_t in_key, term_t out_v
 
     if (PL_is_variable(in_dbi)) { PL_fail; }
     MDB_dbi dbi = 0;
-    if (!PL_get_pointer(in_dbi, (void*)&dbi)) { PL_fail; }
+    if (!PL_get_integer(in_dbi, (int*)&dbi)) { PL_fail; }
 
     MDB_val key;
     if (!PL_get_nchars(in_key, &key.mv_size, (char**)&key.mv_data,
-          CVT_ATOM|CVT_STRING|CVT_LIST)) {
+          CVT_ATOM)) {
+      fprintf(stderr, "get key; not a string\n");
       PL_fail;
     }
     MDB_val data;
-    if (mdb_get(txn, dbi, &key, &data) != 0) {
+    int res = 0;
+    if ((res = mdb_get(txn, dbi, &key, &data)) != 0) {
+      switch (res) {
+        case MDB_NOTFOUND:
+          fprintf(stderr, "lmdb_get: the key was not in the database.\n");
+          break;
+        case EINVAL:
+          fprintf(stderr, "lmdb_get: an invalid parameter was specified.\n");
+          break;
+        default:
+          fprintf(stderr, "lmdb_get: another error %d\n", res);
+      }
       PL_fail;
     } else {
       return PL_unify_list_ncodes(out_value, data.mv_size, data.mv_data);
@@ -351,11 +363,11 @@ foreign_t swi_lmdb_put(term_t in_txn, term_t in_dbi, term_t in_key, term_t in_va
 
     if (PL_is_variable(in_dbi)) { PL_fail; }
     MDB_dbi dbi = 0;
-    if (!PL_get_pointer(in_dbi, (void*)&dbi)) { PL_fail; }
+    if (!PL_get_integer(in_dbi, (int*)&dbi)) { PL_fail; }
 
     MDB_val key;
     if (!PL_get_nchars(in_key, &key.mv_size, (char**)&key.mv_data,
-          CVT_ATOM|CVT_STRING|CVT_LIST)) {
+          CVT_ATOM)) {
       fprintf(stderr, "mdb_put: error while reading key\n");
       PL_fail;
     }
@@ -378,6 +390,9 @@ foreign_t swi_lmdb_put(term_t in_txn, term_t in_dbi, term_t in_key, term_t in_va
         case MDB_TXN_FULL:
           fprintf(stderr, "mdb_put: the transaction has too many dirty pages.\n");
           break;
+        case MDB_KEYEXIST:
+          fprintf(stderr, "mdb_put: key/data pair already exists.\n");
+          break;
         case EACCES:
           fprintf(stderr, "mdb_put: an attempt was made to write in a read-only transaction.\n");
           break;
@@ -399,11 +414,11 @@ foreign_t swi_lmdb_del(term_t in_txn, term_t in_dbi, term_t in_key, term_t in_va
 
     if (PL_is_variable(in_dbi)) { PL_fail; }
     MDB_dbi dbi = 0;
-    if (!PL_get_pointer(in_dbi, (void*)&dbi)) { PL_fail; }
+    if (!PL_get_integer(in_dbi, (int*)&dbi)) { PL_fail; }
 
     MDB_val key;
     if (!PL_get_nchars(in_key, &key.mv_size, (char**)&key.mv_data,
-          CVT_ATOM|CVT_STRING|CVT_LIST)) {
+          CVT_ATOM)) {
       PL_fail;
     }
     MDB_val data;
@@ -426,7 +441,7 @@ foreign_t swi_lmdb_cursor_open(term_t in_txn, term_t in_dbi, term_t out_cursor) 
 
     if (PL_is_variable(in_dbi)) { PL_fail; }
     MDB_dbi dbi = 0;
-    if (!PL_get_pointer(in_dbi, (void*)&dbi)) { PL_fail; }
+    if (!PL_get_integer(in_dbi, (int*)&dbi)) { PL_fail; }
 
     MDB_cursor *cursor;
     if (mdb_cursor_open(txn, dbi, &cursor) != 0) {
@@ -443,7 +458,7 @@ foreign_t swi_lmdb_cursor_get(term_t in_cursor, term_t in_key, term_t out_value,
 
     MDB_val key;
     if (!PL_get_nchars(in_key, &key.mv_size, (char**)&key.mv_data,
-          CVT_ATOM|CVT_STRING|CVT_LIST)) {
+          CVT_ATOM)) {
       PL_fail;
     }
 

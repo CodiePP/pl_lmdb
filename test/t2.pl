@@ -9,7 +9,7 @@ run_test :-
   format("LMDB version: ~a~n",[V]),
   lmdb_env_create(Env),
   lmdb_env_set_maxdbs(Env, 42),
-  MapSz is 2^30 * 100, % 100 GB
+  MapSz is 2^20 * 100, % 100 MB
   lmdb_env_set_mapsize(Env, MapSz),
   getenv('TMPDIR', P),
   lmdb_env_open(Env, P, 0, 0o0640),
@@ -32,6 +32,7 @@ run_test :-
   lmdb_encode_int32(Num1Ret, Ans3),
   (Num1Ret = 42 ; format(user_error, "expected: '42', got: ~p~n", [Num1Ret])),
 
+  lmdb_txn_commit(Txn),
   lmdb_env_close(Env),
 
   format("all done.~n").
