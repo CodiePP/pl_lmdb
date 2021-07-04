@@ -31,9 +31,11 @@ run_test :-
   write_items(1000000, Txn, Dbi),
 
   lmdb_txn_commit(Txn),
+  lmdb_env_info(Env, Info),
+  lmdb_env_stats(Env, Stats),
   lmdb_env_close(Env),
 
-  format("all done.~n").
+  format("all done: ~p~n~p~n", [Stats,Info]).
 
 write_items(0, _, _) :- !.
 write_items(N, Txn, Dbi) :-

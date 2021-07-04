@@ -30,6 +30,8 @@
                 , lmdb_env_open/3
                 , lmdb_env_open/4
                 , lmdb_env_close/1
+                , lmdb_env_info/2
+                , lmdb_env_stats/2
                 % transaction
                 , lmdb_txn_flags/2
                 , lmdb_txn_begin/4
@@ -38,6 +40,7 @@
                 % named database
                 , lmdb_dbi_flags/2
                 , lmdb_dbi_open/4
+                , lmdb_dbi_close/2
                 % direct api
                 , lmdb_get/4
                 , lmdb_put_flags/2
@@ -46,6 +49,7 @@
                 , lmdb_del/4
                 % cursor
                 , lmdb_cursor_open/3
+                , lmdb_cursor_op/3
                 , lmdb_cursor_get/4
                 , lmdb_cursor_put/4
                 , lmdb_cursor_del/2
@@ -122,6 +126,16 @@ lmdb_env_open(Env, Path, Flags, Mode) :-
     integer(Flags), integer(Mode),
     pl_lmdb_env_open(Env, Path, Flags, Mode).
 
+% lmdb_env_info(+Env, +List)
+lmdb_env_info(Env, Info) :-
+    nonvar(Env), var(Info),
+    pl_lmdb_env_info(Env, Info).
+
+% lmdb_env_info(+Env, +List)
+lmdb_env_stats(Env, Stats) :-
+    nonvar(Env), var(Stats),
+    pl_lmdb_env_stats(Env, Stats).
+
 % lmdb_env_set_maxdbs(+Env, +Integer)
 lmdb_env_set_maxdbs(Env, MaxSz) :-
     nonvar(Env), integer(MaxSz),
@@ -172,6 +186,11 @@ lmdb_dbi_open(Txn, DbName, DbiFlags, Dbi) :-
     nonvar(DbiFlags), var(Dbi),
     pl_lmdb_dbi_open(Txn, DbName, DbiFlags, Dbi).
 
+% lmdb_dbi_close(+Env, +Dbi)
+lmdb_dbi_close(Env, Dbi) :-
+    nonvar(Env), nonvar(Dbi),
+    pl_lmdb_dbi_close(Env, Dbi).
+
 % lmdb_get(+Txn, +Dbi, +Key, -Value)
 lmdb_get(Txn, Dbi, Key, Value) :-
     nonvar(Txn), nonvar(Dbi),
@@ -206,6 +225,12 @@ lmdb_del(Txn, Dbi, Key, Value) :-
 lmdb_cursor_open(Txn, Dbi, Cursor) :-
     nonvar(Txn), nonvar(Dbi), var(Cursor),
     pl_lmdb_cursor_open(Txn, Dbi, Cursor).
+
+% lmdb_cursor_op(+Cursor, +String, -Op)
+lmdb_cursor_op(Cursor, OpName, Op) :-
+    nonvar(Cursor), nonvar(OpName),
+    var(Op),
+    pl_lmdb_cursor_op(Cursor, OpName, Op).
 
 % lmdb_cursor_get(+Cursor, Key, Value, +Op)
 lmdb_cursor_get(Cursor, Key, Value, Op) :-

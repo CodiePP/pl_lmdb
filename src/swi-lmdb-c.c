@@ -30,14 +30,18 @@ foreign_t swi_lmdb_env_close(term_t in_env);
 foreign_t swi_lmdb_env_set_maxdbs(term_t in_env, term_t in_sz);
 foreign_t swi_lmdb_env_set_mapsize(term_t in_env, term_t in_sz);
 foreign_t swi_lmdb_env_open(term_t in_env, term_t in_path, term_t in_flags, term_t in_mode);
+foreign_t swi_lmdb_env_stats(term_t in_env, term_t out_list);
+foreign_t swi_lmdb_env_info(term_t in_env, term_t out_list);
 foreign_t swi_lmdb_txn_begin(term_t in_env, term_t in_parent, term_t in_flags, term_t out_txn);
 foreign_t swi_lmdb_txn_abort(term_t in_txn);
 foreign_t swi_lmdb_txn_commit(term_t in_txn);
 foreign_t swi_lmdb_dbi_open(term_t in_txn, term_t in_name, term_t in_flags, term_t out_dbi);
+foreign_t swi_lmdb_dbi_close(term_t in_env, term_t in_dbi);
 foreign_t swi_lmdb_get(term_t in_txn, term_t in_dbi, term_t in_key, term_t out_value);
 foreign_t swi_lmdb_put(term_t in_txn, term_t in_dbi, term_t in_key, term_t in_value, term_t in_flags);
 foreign_t swi_lmdb_del(term_t in_txn, term_t in_dbi, term_t in_key, term_t in_value);
 foreign_t swi_lmdb_cursor_open(term_t in_txn, term_t in_dbi, term_t out_cursor);
+foreign_t swi_lmdb_cursor_op(term_t in_cursor, term_t in_opname, term_t out_op);
 foreign_t swi_lmdb_cursor_get(term_t in_cursor, term_t in_key, term_t out_value, term_t in_op);
 foreign_t swi_lmdb_cursor_put(term_t in_cursor, term_t in_key, term_t in_value, term_t in_flags);
 foreign_t swi_lmdb_cursor_del(term_t in_cursor, term_t in_flags);
@@ -59,14 +63,18 @@ install_t install()
   PL_register_foreign("pl_lmdb_env_set_mapsize", 2, swi_lmdb_env_set_mapsize, 0);
   PL_register_foreign("pl_lmdb_env_set_maxdbs", 2, swi_lmdb_env_set_maxdbs, 0);
   PL_register_foreign("pl_lmdb_env_close", 1, swi_lmdb_env_close, 0);
+  PL_register_foreign("pl_lmdb_env_stats", 2, swi_lmdb_env_stats, 0);
+  PL_register_foreign("pl_lmdb_env_info", 2, swi_lmdb_env_info, 0);
   PL_register_foreign("pl_lmdb_txn_begin", 4, swi_lmdb_txn_begin, 0);
   PL_register_foreign("pl_lmdb_txn_abort", 1, swi_lmdb_txn_abort, 0);
   PL_register_foreign("pl_lmdb_txn_commit", 1, swi_lmdb_txn_commit, 0);
   PL_register_foreign("pl_lmdb_dbi_open", 4, swi_lmdb_dbi_open, 0);
+  PL_register_foreign("pl_lmdb_dbi_close", 2, swi_lmdb_dbi_close, 0);
   PL_register_foreign("pl_lmdb_get", 4, swi_lmdb_get, 0);
   PL_register_foreign("pl_lmdb_put", 5, swi_lmdb_put, 0);
   PL_register_foreign("pl_lmdb_del", 4, swi_lmdb_del, 0);
   PL_register_foreign("pl_lmdb_cursor_open", 3, swi_lmdb_cursor_open, 0);
+  PL_register_foreign("pl_lmdb_cursor_op", 3, swi_lmdb_cursor_op, 0);
   PL_register_foreign("pl_lmdb_cursor_get", 4, swi_lmdb_cursor_get, 0);
   PL_register_foreign("pl_lmdb_cursor_put", 4, swi_lmdb_cursor_put, 0);
   PL_register_foreign("pl_lmdb_cursor_del", 2, swi_lmdb_cursor_del, 0);
@@ -251,6 +259,56 @@ foreign_t swi_lmdb_env_open(term_t in_env, term_t in_path, term_t in_flags, term
     }
 }
 
+#define MDB_Struct_Acc(Nm, Fld, Cast, Acc) { \
+      functor_t fct = PL_new_functor(PL_new_atom(Nm), 1); \
+      if (!PL_unify_list(lst, ele, lst)) { PL_fail; }; \
+      if (!PL_unify_term(ele, PL_FUNCTOR, fct, Acc, Cast Fld )) { PL_fail; } \
+    }
+
+foreign_t swi_lmdb_env_stats(term_t in_env, term_t out_list)
+{
+    if (PL_is_variable(in_env)) { PL_fail; }
+    MDB_env *env = NULL;
+    if (!PL_get_pointer(in_env, (void**)&env)) { PL_fail; }
+
+    MDB_stat envstat;
+    if (mdb_env_stat(env, &envstat) != 0) {
+      PL_fail;
+    }
+
+    term_t ele = PL_new_term_ref();
+    term_t lst = PL_copy_term_ref(out_list);
+    MDB_Struct_Acc("ms_psize", envstat.ms_psize, (int), PL_INT);
+    MDB_Struct_Acc("ms_depth", envstat.ms_depth, (int), PL_INT);
+    MDB_Struct_Acc("ms_branch_pages", envstat.ms_branch_pages, (size_t), PL_LONG);
+    MDB_Struct_Acc("ms_leaf_pages", envstat.ms_leaf_pages, (size_t), PL_LONG);
+    MDB_Struct_Acc("ms_overflow_pages", envstat.ms_overflow_pages, (size_t), PL_LONG);
+    MDB_Struct_Acc("ms_entries", envstat.ms_entries, (size_t), PL_LONG);
+    return PL_unify_nil(lst);
+}
+
+foreign_t swi_lmdb_env_info(term_t in_env, term_t out_list)
+{
+    if (PL_is_variable(in_env)) { PL_fail; }
+    MDB_env *env = NULL;
+    if (!PL_get_pointer(in_env, (void**)&env)) { PL_fail; }
+
+    MDB_envinfo envinfo;
+    if (mdb_env_info(env, &envinfo) != 0) {
+      PL_fail;
+    }
+
+    term_t ele = PL_new_term_ref();
+    term_t lst = PL_copy_term_ref(out_list);
+    MDB_Struct_Acc("me_mapaddr", envinfo.me_mapaddr, (void*), PL_LONG);
+    MDB_Struct_Acc("me_mapsize", envinfo.me_mapsize, (size_t), PL_LONG);
+    MDB_Struct_Acc("me_last_pgno", envinfo.me_last_pgno, (size_t), PL_LONG);
+    MDB_Struct_Acc("me_last_txnid", envinfo.me_last_txnid, (size_t), PL_LONG);
+    MDB_Struct_Acc("me_maxreaders", envinfo.me_maxreaders, (int), PL_INT);
+    MDB_Struct_Acc("me_numreaders", envinfo.me_numreaders, (int), PL_INT);
+    return PL_unify_nil(lst);
+}
+
 foreign_t swi_lmdb_txn_begin(term_t in_env, term_t in_parent, term_t in_flags, term_t out_txn) {
     if (PL_is_variable(in_env)) { PL_fail; }
     MDB_env *env = NULL;
@@ -266,6 +324,7 @@ foreign_t swi_lmdb_txn_begin(term_t in_env, term_t in_parent, term_t in_flags, t
     MDB_txn *txn;
     int res = mdb_txn_begin(env, parent, u_flags, &txn);
     if (res != 0) {
+        fprintf(stderr, "mdb_txn_begin: failed with %d\n", res);
         PL_fail;
     } else {
         return PL_unify_pointer(out_txn, txn);
@@ -284,7 +343,24 @@ foreign_t swi_lmdb_txn_commit(term_t in_txn) {
     if (PL_is_variable(in_txn)) { PL_fail; }
     MDB_txn *txn = NULL;
     if (!PL_get_pointer(in_txn, (void**)&txn)) { PL_fail; }
-    if (mdb_txn_commit(txn) != 0) {
+    int res = mdb_txn_commit(txn);
+    if (res != 0) {
+      switch(res) {
+        case EINVAL:
+          fprintf(stderr, "mdb_txn_commit: an invalid parameter was specified.\n");
+          break;
+        case ENOSPC:
+          fprintf(stderr, "mdb_txn_commit: no more disk space.\n");
+          break;
+        case EIO:
+          fprintf(stderr, "mdb_txn_commit: a low-level I/O error occurred while writing.\n");
+          break;
+        case ENOMEM:
+          fprintf(stderr, "mdb_txn_commit: out of memory.\n");
+          break;
+        default:
+          fprintf(stderr, "mdb_txn_commit: another error %d\n", res);
+      };
       PL_fail;
     }
     PL_succeed;
@@ -322,6 +398,20 @@ foreign_t swi_lmdb_dbi_open(term_t in_txn, term_t in_name, term_t in_flags, term
     }
 }
 
+foreign_t swi_lmdb_dbi_close(term_t in_env, term_t in_dbi)
+{
+    if (PL_is_variable(in_env)) { PL_fail; }
+    MDB_env *env = NULL;
+    if (!PL_get_pointer(in_env, (void**)&env)) { PL_fail; }
+
+    if (PL_is_variable(in_dbi)) { PL_fail; }
+    MDB_dbi dbi = 0;
+    if (!PL_get_integer(in_dbi, (int*)&dbi)) { PL_fail; }
+
+    mdb_dbi_close(env, dbi);
+    PL_succeed;
+}
+
 foreign_t swi_lmdb_get(term_t in_txn, term_t in_dbi, term_t in_key, term_t out_value) {
     if (PL_is_variable(in_txn)) { PL_fail; }
     MDB_txn *txn = NULL;
@@ -338,8 +428,8 @@ foreign_t swi_lmdb_get(term_t in_txn, term_t in_dbi, term_t in_key, term_t out_v
       PL_fail;
     }
     MDB_val data;
-    int res = 0;
-    if ((res = mdb_get(txn, dbi, &key, &data)) != 0) {
+    int res = mdb_get(txn, dbi, &key, &data);
+    if (res != 0) {
       switch (res) {
         case MDB_NOTFOUND:
           fprintf(stderr, "lmdb_get: the key was not in the database.\n");
@@ -451,25 +541,90 @@ foreign_t swi_lmdb_cursor_open(term_t in_txn, term_t in_dbi, term_t out_cursor) 
     }
 }
 
-foreign_t swi_lmdb_cursor_get(term_t in_cursor, term_t in_key, term_t out_value, term_t in_op) {
+struct lmdb_cursor_op_itm {
+  MDB_cursor_op _op;
+  const char *_nm;
+};
+static
+struct lmdb_cursor_op_itm lmdb_cursor_op_tbl[] = {
+    { MDB_FIRST, "MDB_FIRST" },
+    { MDB_FIRST_DUP, "MDB_FIRST_DUP" },
+    { MDB_GET_BOTH, "MDB_GET_BOTH"},
+    { MDB_GET_BOTH_RANGE, "MDB_GET_BOTH_RANGE"},
+    { MDB_GET_CURRENT, "MDB_GET_CURRENT"},
+    { MDB_GET_MULTIPLE, "MDB_GET_MULTIPLE"},
+    { MDB_LAST, "MDB_LAST"},
+    { MDB_LAST_DUP, "MDB_LAST_DUP"},
+    { MDB_NEXT, "MDB_NEXT"},
+    { MDB_NEXT_DUP, "MDB_NEXT_DUP"},
+    { MDB_NEXT_MULTIPLE, "MDB_NEXT_MULTIPLE"},
+    { MDB_NEXT_NODUP, "MDB_NEXT_NODUP"},
+    { MDB_PREV, "MDB_PREV"},
+    { MDB_PREV_DUP, "MDB_PREV_DUP"},
+    { MDB_PREV_NODUP, "MDB_PREV_NODUP"},
+    { MDB_SET, "MDB_SET"},
+    { MDB_SET_KEY, "MDB_SET_KEY"},
+    { MDB_SET_RANGE, "MDB_SET_RANGE"},
+    { MDB_PREV_MULTIPLE, "MDB_PREV_MULTIPLE"},
+  };
+
+foreign_t swi_lmdb_cursor_op(term_t in_cursor, term_t in_opname, term_t out_op) {
     if (PL_is_variable(in_cursor)) { PL_fail; }
     MDB_cursor *cursor = NULL;
     if (!PL_get_pointer(in_cursor, (void**)&cursor)) { PL_fail; }
 
-    MDB_val key;
-    if (!PL_get_nchars(in_key, &key.mv_size, (char**)&key.mv_data,
+    MDB_val opname;
+    if (!PL_get_nchars(in_opname, &opname.mv_size, (char**)&opname.mv_data,
           CVT_ATOM)) {
       PL_fail;
     }
 
-    MDB_val data;
-    if (mdb_cursor_get(cursor, &key, &data, 1) != 0) {
+    int opid = -1;
+    int maxsz = sizeof(lmdb_cursor_op_tbl) / sizeof(struct lmdb_cursor_op_itm);
+    for (int i = 0; i < maxsz; i++) {
+      if (strncmp(opname.mv_data, lmdb_cursor_op_tbl[i]._nm, opname.mv_size) == 0) {
+        opid = lmdb_cursor_op_tbl[i]._op;
+        break;
+      }
+    }
+    if (opid < 0) {
       PL_fail;
     } else {
-      return PL_unify_list_ncodes(out_value, data.mv_size, data.mv_data);
+      return PL_unify_integer(out_op, opid);
     }
+}
 
-    PL_fail;
+foreign_t swi_lmdb_cursor_get(term_t in_cursor, term_t out_key, term_t out_value, term_t in_op) {
+    if (PL_is_variable(in_cursor)) { PL_fail; }
+    MDB_cursor *cursor = NULL;
+    if (!PL_get_pointer(in_cursor, (void**)&cursor)) { PL_fail; }
+
+    if (PL_is_variable(in_op)) { PL_fail; }
+    MDB_cursor_op op = 0;
+    if (!PL_get_integer(in_op, (int*)&op)) { PL_fail; }
+
+    MDB_val key;
+    MDB_val data;
+    int res = mdb_cursor_get(cursor, &key, &data, op);
+    if (res != 0) {
+      switch (res) {
+        case MDB_NOTFOUND:
+          fprintf(stderr, "mdb_cursor_get: no matching key found.\n");
+          break;
+        case EINVAL:
+          fprintf(stderr, "mdb_cursor_get: an invalid parameter was specified.\n");
+          break;
+        default:
+          fprintf(stderr, "mdb_cursor_get: other error %d.\n", res);
+      }
+      PL_fail;
+    } else {
+      if (!PL_unify_list_ncodes(out_key, key.mv_size, key.mv_data)) {
+        PL_fail; }
+      if (!PL_unify_list_ncodes(out_value, data.mv_size, data.mv_data)) {
+        PL_fail; }
+      PL_succeed;
+    }
 }
 
 foreign_t swi_lmdb_cursor_put(term_t in_cursor, term_t in_key, term_t in_value, term_t in_flags) {

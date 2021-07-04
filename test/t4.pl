@@ -5,7 +5,7 @@
 
 % time used:
 % 2021-06-23 23:40
-%
+% 2021-07-04 % 8,077,411 inferences, 2.296 CPU in 2.373 seconds (97% CPU, 3517589 Lips)
 
 test :-
   time(run_test),
@@ -27,9 +27,11 @@ run_test :-
   read_items(1000000, Txn, Dbi),
 
   lmdb_txn_abort(Txn),
+  lmdb_env_info(Env, Info),
+  lmdb_env_stats(Env, Stats),
   lmdb_env_close(Env),
 
-  format("all done.~n").
+  format("all done: ~p~n~p~n", [Stats,Info]).
 
 read_items(0, _, _) :- !.
 read_items(N, Txn, Dbi) :-
