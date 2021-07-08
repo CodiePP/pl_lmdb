@@ -26,6 +26,7 @@ GP_CFLAGS = @LMDB_CFLAGS@
 GP_LDLIBS = @LMDB_LIBS@
 
 # module name
+MNAME = @PACKAGE_NAME@
 MODULE = @PACKAGE_NAME@-@ARCH@
 
 SRCDIR = src
@@ -56,7 +57,8 @@ $(OBJDIR)/%.gpo : $(SRCDIR)/%.c
 
 $(SRCDIR)/%.qlf : $(SRCDIR)/%.pl
 	@echo "compiling $<"
-	$(SWIPL) -q -t "qcompile(\"$<\")."
+	$(SWIPL) -q -t "assertz(file_search_path(sbcl,'.')), qcompile(\"$<\")."
+
 
 # rule to make it all
 all: $(MODULE) swi
@@ -70,18 +72,24 @@ $(GP_OBJS) : $(GP_SRCS)
 $(MODULE): $(OBJDIR) $(SWI_OBJS)
 	@echo "Building module $(MODULE)"
 	$(LINK) $(SWI_LDFLAGS) -o $(MODULE) $(SWI_OBJS) $(SWI_LDLIBS)
+	ln -s $(MODULE) $(MNAME)
 lib$(MODULE).a: $(OBJDIR) $(GP_OBJS)
 	@echo "Building library $(MODULE)"
 	$(AR) -r -c $@ $(GP_OBJS)
 	$(RANLIB) $@
 
 check:
-	@echo "intentionally left empty"
+	@echo "testing"
+	swipl -l test/t3.pl -g test
+	swipl -l test/t4.pl -g test
+	@rm -f data.mdb lock.mdb
 
 clean:
 	@echo "Cleaning away everything."
 	@test -d $(OBJDIR) && rm -r $(OBJDIR); true
 	@test -f $(MODULE) && rm $(MODULE); true
+	@rm -f $(MNAME); true
+	@rm -f $(SRCDIR)/lmdb.qlf; true
 	@test -f lib$(MODULE).a && rm lib$(MODULE).a; true
 
 $(OBJDIR):

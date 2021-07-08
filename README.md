@@ -1,6 +1,8 @@
 
 # Interfacing to LMDB from Prolog
 
+[![building the package for SWI Prolog](https://github.com/CodiePP/pl_lmdb/actions/workflows/compilation.yml/badge.svg?branch=main)](https://github.com/CodiePP/pl_lmdb/actions/workflows/compilation.yml)
+
 [LMDB](http://www.lmdb.tech/doc/) is a very fast database which maps committed records into memory.
 
 ## compilation
