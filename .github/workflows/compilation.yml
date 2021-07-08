@@ -37,7 +37,7 @@ jobs:
         run: |
           mkdir -v -p ${HOME}/lib/sbcl
           mkdir -v -p ${HOME}/.config/swi-prolog
-          cp -v pllmdb-Linux ${HOME}/lib/sbcl/plkafka
+          cp -v pllmdb-Linux ${HOME}/lib/sbcl/pllmdb
           cp -v src/lmdb.qlf ${HOME}/lib/sbcl/
           echo ":- assertz(file_search_path(sbcl,'${HOME}/lib/sbcl'))." >> ${HOME}/.config/swi-prolog/init.pl
       - name: make check
