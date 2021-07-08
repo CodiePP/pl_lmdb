@@ -76,7 +76,9 @@ lib$(MODULE).a: $(OBJDIR) $(GP_OBJS)
 	$(RANLIB) $@
 
 check:
-	@echo "intentionally left empty"
+	@echo "testing"
+	swipl -l test/t3.pl -g test
+	swipl -l test/t4.pl -g test
 
 clean:
 	@echo "Cleaning away everything."
