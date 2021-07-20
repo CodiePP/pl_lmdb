@@ -2,7 +2,11 @@
 
 % run:
 % $ rm lock.mdb data.mdb
+%
 % $ swipl -l test/t5.pl -g test
+%
+% $ gplc -o t5 --global-size 500000 --trail-size 200000 test/t5_gp.pl test/t5.pl libpllmdb-Darwin.a -L -llmdb
+% $ ./t5
 
 test :-
   time(run_test),
@@ -39,7 +43,7 @@ run_test :-
 write_items(Lim, Lim, _, _) :- !.
 write_items(Lim, N, Txn, Dbi) :-
   N > Lim,
-  atom_number(Key, N),
+  number_codes(N, Key),
   lmdb_encode_int32(N, Num),
   lmdb_put_flags(['MDB_NOOVERWRITE'], DbiPutFlags),
   lmdb_put(Txn, Dbi, Key, Num, DbiPutFlags),
@@ -65,7 +69,7 @@ traverse(DbName) :-
     format("first entry: ~s/~p~n",[K,V]),
     lmdb_cursor_op(Cursor, 'MDB_NEXT', OpNext),
     traverse_db(Cursor, OpNext)
-  ; format("cannot set cursor to first entry~n")
+  ; format("cannot set cursor to first entry~n",[])
   ),
 
   lmdb_txn_abort(Txn),
@@ -77,7 +81,7 @@ traverse_db(Cursor, Op) :-
   format("next entry: ~s/~p~n",[K,V]), !,
   traverse_db(Cursor, Op).
 traverse_db(_, _) :-
-  format("[the end]~n").
+  format("[the end]~n",[]).
 
 verify(DbName, Start, End) :-
   lmdb_env_create(Env),
@@ -102,7 +106,7 @@ verify(DbName, Start, End) :-
 verify_items(End, End, _, _) :- !.
 verify_items(End, N, Txn, Dbi) :-
   N > End,
-  atom_number(Key, N),
+  number_codes(N, Key),
   lmdb_get(Txn, Dbi, Key, Ans),
   lmdb_encode_int32(Num, Ans),
   (N = Num ; (format("failed to retrieve: ~p~n", [Key]), fail)),

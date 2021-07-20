@@ -19,6 +19,8 @@ GPLC = gplc
 
 LINK = @CC@
 
+RANLIB = @RANLIB@
+
 SWI_CFLAGS = @LMDB_CFLAGS@ @SWI_CFLAGS@
 SWI_LDLIBS = @LMDB_LIBS@ @SWI_LIBS@
 SWI_LDFLAGS = -shared
@@ -32,10 +34,8 @@ MODULE = @PACKAGE_NAME@-@ARCH@
 SRCDIR = src
 OBJDIR = obj-@ARCH@
 
-GP_SRCS = 
-#$(SRCDIR)/gp-lmdb.pl $(SRCDIR)/gp-lmdb-c.c
-GP_OBJS = 
-#$(OBJDIR)/gp-lmdb.gpo $(OBJDIR)/gp-lmdb-c.gpo
+GP_SRCS = $(SRCDIR)/gp-lmdb.pl $(SRCDIR)/gp-lmdb-c.c $(SRCDIR)/lmdb_flags.pl
+GP_OBJS = $(OBJDIR)/gp-lmdb.gpo $(OBJDIR)/gp-lmdb-c.gpo
 
 # object files
 SWI_OBJS = $(OBJDIR)/swi-lmdb-c.o
@@ -53,7 +53,7 @@ $(OBJDIR)/%.gpo : $(SRCDIR)/%.pl
 
 $(OBJDIR)/%.gpo : $(SRCDIR)/%.c
 	@echo "compiling $<"
-	$(GPLC) -c @DEFS@ -o $@ $<
+	$(GPLC) -c -C @DEFS@ -o $@ $<
 
 $(SRCDIR)/%.qlf : $(SRCDIR)/%.pl
 	@echo "compiling $<"
@@ -61,27 +61,37 @@ $(SRCDIR)/%.qlf : $(SRCDIR)/%.pl
 
 
 # rule to make it all
-all: $(MODULE) swi
-swi: $(MODULE) $(SRCDIR)/lmdb.qlf
-gp: lib$(MODULE).a
+all: swi gp
+swi: $(MODULE) $(SRCDIR)/lmdb.qlf $(SRCDIR)/lmdb_flags.pl
+gp: lib$(MODULE).a top.gp
 
-
+$(SRCDIR)/lmdb.qlf: $(SRCDIR)/lmdb_flags.pl $(SRCDIR)/lmdb.pl
 $(GP_OBJS) : $(GP_SRCS)
 
 # builds the executable
 $(MODULE): $(OBJDIR) $(SWI_OBJS)
 	@echo "Building module $(MODULE)"
 	$(LINK) $(SWI_LDFLAGS) -o $(MODULE) $(SWI_OBJS) $(SWI_LDLIBS)
-	ln -s $(MODULE) $(MNAME)
+	ln -sf $(MODULE) $(MNAME)
 lib$(MODULE).a: $(OBJDIR) $(GP_OBJS)
 	@echo "Building library $(MODULE)"
 	$(AR) -r -c $@ $(GP_OBJS)
 	$(RANLIB) $@
+top.gp: $(GP_OBJS) lib$(MODULE).a
+	@echo "Building GNU Prolog top"
+	$(GPLC) -o $@ --new-top-level src/gp-lmdb.pl lib$(MODULE).a -L -llmdb
 
 check:
-	@echo "testing"
+	@echo "testing using SWI Prolog"
 	swipl -l test/t3.pl -g test
 	swipl -l test/t4.pl -g test
+	@rm -f data.mdb lock.mdb
+	@echo "testing using GNU Prolog"
+	$(GPLC) -o t3.gp --global-size 500000 --trail-size 100000 test/t3_gp.pl test/t3.pl lib$(MODULE).a -L -llmdb
+	$(GPLC) -o t4.gp --global-size 500000 --trail-size 100000 test/t4_gp.pl test/t4.pl lib$(MODULE).a -L -llmdb
+	$(GPLC) -o t5.gp --global-size 500000 --trail-size 100000 test/t5_gp.pl test/t5.pl lib$(MODULE).a -L -llmdb
+	./t3.gp
+	./t4.gp
 	@rm -f data.mdb lock.mdb
 
 clean:
@@ -90,6 +100,8 @@ clean:
 	@test -f $(MODULE) && rm $(MODULE); true
 	@rm -f $(MNAME); true
 	@rm -f $(SRCDIR)/lmdb.qlf; true
+	@rm -f top.gp; true
+	@rm -f t[345].gp; true
 	@test -f lib$(MODULE).a && rm lib$(MODULE).a; true
 
 $(OBJDIR):

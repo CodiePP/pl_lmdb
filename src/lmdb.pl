@@ -62,9 +62,10 @@
                 ]).
 
 :- use_foreign_library(sbcl('pllmdb')).
+:- include('lmdb_flags.pl').
 
 % convention used:
-% * all keys are atoms
+% * all keys are list of codes
 % * values entering the db can be either string, atom or list of codes
 % * values retrieved are list of codes
 
@@ -106,14 +107,6 @@ lmdb_env_create(Env) :-
     var(Env),
     pl_lmdb_env_create(Env).
 
-% lmdb_env_flags(+List, -Flags)
-lmdb_env_flags(List, Flags) :-
-  ValidFlags = [('MDB_FIXEDMAP'-0x01), ('MDB_NOSUBDIR'-0x4000), ('MDB_RDONLY'-0x20000),
-                ('MDB_NOSYNC'-0x10000), ('MDB_NOMETASYNC'-0x40000), ('MDB_WRITEMAP'-0x80000),
-                ('MDB_MAPASYNC'-0x100000), ('MDB_NOTLS'-0x200000), ('MDB_NOLOCK'-0x400000),
-                ('MDB_NORDAHEAD'-0x800000), ('MDB_NOMEMINIT'-0x1000000)],
-  foldl([X,Acc,Y] >> (once(member((X-N),ValidFlags)), Y is Acc \/ N), List, 0, Flags).
-
 % lmdb_env_open(+Env, +Path, +Integer, +Integer)
 % Mode may be passed in as an octal number: e.g. 0o0640
 lmdb_env_open(Env, Path) :-
@@ -151,11 +144,6 @@ lmdb_env_close(Env) :-
     nonvar(Env),
     pl_lmdb_env_close(Env).
 
-% lmdb_txn_flags(+List, -Flags)
-lmdb_txn_flags(List, Flags) :-
-  ValidFlags = [('MDB_RDONLY'-0x20000)],
-  foldl([X,Acc,Y] >> (once(member((X-N),ValidFlags)), Y is Acc \/ N), List, 0, Flags).
-
 % lmdb_txn_begin(+Env, +Txn, +TxnFlags, -Txn)
 lmdb_txn_begin(Env, ParentTxn, TxnFlags, Txn) :-
     nonvar(Env), nonvar(ParentTxn),
@@ -172,13 +160,6 @@ lmdb_txn_commit(Txn) :-
     nonvar(Txn),
     pl_lmdb_txn_commit(Txn).
 
-% lmdb_dbi_flags(+List, -Integer)
-lmdb_dbi_flags(List, Flags) :-
-  ValidFlags = [('MDB_REVERSEKEY'-0x02),('MDB_DUPSORT'-0x04),('MDB_INTEGERKEY'-0x08),
-                ('MDB_DUPFIXED'-0x10),('MDB_INTEGERDUP'-0x20),('MDB_REVERSEDUP'-0x40),
-                ('MDB_CREATE'-0x40000)],
-  foldl([X,Acc,Y] >> (once(member((X-N),ValidFlags)), Y is Acc \/ N), List, 0, Flags).
-
 % lmdb_dbi_open(+Txn, +String, +DbiFlags, -Dbi)
 lmdb_dbi_open(Txn, DbName, DbiFlags, Dbi) :-
     nonvar(Txn),
@@ -194,22 +175,16 @@ lmdb_dbi_close(Env, Dbi) :-
 % lmdb_get(+Txn, +Dbi, +Key, -Value)
 lmdb_get(Txn, Dbi, Key, Value) :-
     nonvar(Txn), nonvar(Dbi),
-    atom(Key),
+    checklist(Key),
     var(Value),
     pl_lmdb_get(Txn, Dbi, Key, Value).
-
-% lmdb_put_flags(+List, -Integer)
-lmdb_put_flags(List, Flags) :-
-  ValidFlags = [('MDB_NOOVERWRITE'-0x10),('MDB_NODUPDATA'-0x20),('MDB_CURRENT'-0x40),
-                ('MDB_APPEND'-0x20000),('MDB_APPENDDUP'-0x40000),('MDB_MULTIPLE'-0x80000)],
-  foldl([X,Acc,Y] >> (once(member((X-N),ValidFlags)), Y is Acc \/ N), List, 0, Flags).
 
 % lmdb_put(+Txn, +Dbi, +Key, +Value, +Flags)
 lmdb_put(Txn, Dbi, Key, Value) :-
   lmdb_put(Txn, Dbi, Key, Value, 0).
 lmdb_put(Txn, Dbi, Key, Value, Flags) :-
     nonvar(Txn), nonvar(Dbi),
-    atom(Key),
+    checklist(Key),
     (checklist(Value) ; string(Value) ; atom(Value)),
     nonvar(Flags), !,
     pl_lmdb_put(Txn, Dbi, Key, Value, Flags).
@@ -217,7 +192,7 @@ lmdb_put(Txn, Dbi, Key, Value, Flags) :-
 % lmdb_del(+Txn, +Dbi, +Key, +Value)
 lmdb_del(Txn, Dbi, Key, Value) :-
     nonvar(Txn), nonvar(Dbi),
-    atom(Key),
+    checklist(Key),
     (checklist(Value) ; string(Value) ; atom(Value)),
     pl_lmdb_del(Txn, Dbi, Key, Value).
 
@@ -241,7 +216,7 @@ lmdb_cursor_get(Cursor, Key, Value, Op) :-
 % lmdb_cursor_put(+Cursor, +Key, +Value, +Flags)
 lmdb_cursor_put(Cursor, Key, Value, Flags) :-
     nonvar(Cursor),
-    atom(Key),
+    checklist(Key),
     (checklist(Value) ; string(Value) ; atom(Value)),
     nonvar(Flags),
     pl_lmdb_cursor_put(Cursor, Key, Value, Flags).
