@@ -10,6 +10,11 @@
 %% all done.
 %% 31,077,371 inferences, 13.187 CPU in 13.353 seconds (99% CPU, 2356634 Lips)
 %
+% 2021-07-20 21:28
+%% LMDB version: LMDB 0.9.29: (March 16, 2021)
+%% all done: [ms_psize(4096),ms_depth(1),ms_branch_pages(0),ms_leaf_pages(1),ms_overflow_pages(0),ms_entries(1)]
+%% [me_mapaddr(0),me_mapsize(104857600),me_last_pgno(8894),me_last_txnid(1),me_maxreaders(126),me_numreaders(0)]
+%% 21,910,225 inferences, 5.814 CPU in 5.947 seconds (98% CPU, 3768210 Lips)
 
 test :-
   time(run_test),
@@ -39,7 +44,7 @@ run_test :-
 
 write_items(0, _, _) :- !.
 write_items(N, Txn, Dbi) :-
-  atom_number(Key, N),
+  number_codes(N, Key),
   lmdb_encode_int32(N, Num),
   lmdb_put_flags(['MDB_NOOVERWRITE'], DbiPutFlags),
   lmdb_put(Txn, Dbi, Key, Num, DbiPutFlags),

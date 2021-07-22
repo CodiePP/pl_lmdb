@@ -6,6 +6,7 @@
 % time used:
 % 2021-06-23 23:40
 % 2021-07-04 % 8,077,411 inferences, 2.296 CPU in 2.373 seconds (97% CPU, 3517589 Lips)
+% 2021-07-20 % 13,910,223 inferences, 3.504 CPU in 3.548 seconds (99% CPU, 3970175 Lips)
 
 test :-
   time(run_test),
@@ -35,7 +36,7 @@ run_test :-
 
 read_items(0, _, _) :- !.
 read_items(N, Txn, Dbi) :-
-  atom_number(Key, N),
+  number_codes(N, Key),
   lmdb_get(Txn, Dbi, Key, Ans),
   lmdb_encode_int32(Num, Ans),
   (N = Num ; (format("failed to retrieve: ~p~n", [Key]), fail)),

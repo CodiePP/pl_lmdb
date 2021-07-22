@@ -14,9 +14,10 @@ then run
 ```sh
 ./configure
 ```
-then call `make swi`
+then call `make swi` to compile for SWI Prolog, or `make gp` to compile for GNU Prolog.
+A simple `make` will produce both.
 
-## installation
+## installation (SWI Prolog)
 
 ```sh
 mkdir -p ${HOME}/lib/sbcl
@@ -30,6 +31,8 @@ echo ":- assertz(file_search_path(sbcl,'${HOME}/lib/sbcl'))." >> ${HOME}/.config
 ```
 
 ## tests
+
+run `make check` to start all tests using SWI Prolog and GNU Prolog. Note the time to completion.
 
 this test will populate a database with one million of records:
 ```sh

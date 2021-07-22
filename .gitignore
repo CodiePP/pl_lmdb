@@ -1,5 +1,8 @@
 obj-*/
 /pllmdb*
+/libpllmdb*
+*.gpo
+/*.gp
 
 src/config.h
 src/config.h.in
