@@ -25,11 +25,11 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
-      - name: install SWI Prolog and liblmdb
+      - name: install Prolog and liblmdb
         run: |
           sudo apt-add-repository ppa:swi-prolog/stable
           sudo apt-get update
-          sudo apt-get -y install swi-prolog liblmdb-dev
+          sudo apt-get -y install swi-prolog gprolog liblmdb-dev
       - name: autoconf
         run: aclocal --force && autoheader --force && autoconf --force
       - name: configure
