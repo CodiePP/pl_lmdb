@@ -36,6 +36,8 @@ jobs:
         run: ./configure
       - name: make swi
         run: make swi
+      - name: make gp
+        run: make gp
       - name: installation
         run: |
           mkdir -v -p ${HOME}/lib/sbcl
