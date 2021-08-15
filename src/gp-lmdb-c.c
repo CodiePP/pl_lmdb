@@ -283,7 +283,22 @@ PlBool gp_lmdb_txn_begin(PlLong in_env, PlLong in_parent, PlLong in_flags, PlLon
     MDB_txn *txn;
     int res = mdb_txn_begin(env, parent, u_flags, &txn);
     if (res != 0) {
-        fprintf(stderr, "mdb_txn_begin: failed with %d\n", res);
+        switch(res) {
+          case EINVAL:
+            fprintf(stderr, "mdb_txn_commit: an invalid parameter was specified.\n");
+            break;
+          case ENOSPC:
+            fprintf(stderr, "mdb_txn_commit: no more disk space.\n");
+            break;
+          case EIO:
+            fprintf(stderr, "mdb_txn_commit: a low-level I/O error occurred while writing.\n");
+            break;
+          case ENOMEM:
+            fprintf(stderr, "mdb_txn_commit: out of memory.\n");
+            break;
+          default:
+            fprintf(stderr, "mdb_txn_commit: another error %d\n", res);
+        };
         return PL_FALSE;
     } else {
         *out_txn = ptr_to_uint(txn);
