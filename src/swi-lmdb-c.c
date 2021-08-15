@@ -324,7 +324,25 @@ foreign_t swi_lmdb_txn_begin(term_t in_env, term_t in_parent, term_t in_flags, t
     MDB_txn *txn;
     int res = mdb_txn_begin(env, parent, u_flags, &txn);
     if (res != 0) {
-        fprintf(stderr, "mdb_txn_begin: failed with %d\n", res);
+        switch(res) {
+          case EINVAL:
+            fprintf(stderr, "mdb_txn_begin: an invalid parameter was specified.\n");
+            break;
+          case ENOMEM:
+            fprintf(stderr, "mdb_txn_begin: out of memory.\n");
+            break;
+          case MDB_READERS_FULL:
+            fprintf(stderr, "mdb_txn_begin: a read-only transaction was requested and the reader lock table is full..\n");
+            break;
+          case MDB_MAP_RESIZED:
+            fprintf(stderr, "mdb_txn_begin: another process wrote data beyond this MDB_env's mapsize and this environment's map must be resized as well.\n");
+            break;
+          case MDB_PANIC:
+            fprintf(stderr, "mdb_txn_begin: a fatal error occurred earlier and the environment must be shut down.\n");
+            break;
+          default:
+            fprintf(stderr, "mdb_txn_begin: failed with %d\n", res);
+        }
         PL_fail;
     } else {
         return PL_unify_pointer(out_txn, txn);
@@ -345,23 +363,23 @@ foreign_t swi_lmdb_txn_commit(term_t in_txn) {
     if (!PL_get_pointer(in_txn, (void**)&txn)) { PL_fail; }
     int res = mdb_txn_commit(txn);
     if (res != 0) {
-      switch(res) {
-        case EINVAL:
-          fprintf(stderr, "mdb_txn_commit: an invalid parameter was specified.\n");
-          break;
-        case ENOSPC:
-          fprintf(stderr, "mdb_txn_commit: no more disk space.\n");
-          break;
-        case EIO:
-          fprintf(stderr, "mdb_txn_commit: a low-level I/O error occurred while writing.\n");
-          break;
-        case ENOMEM:
-          fprintf(stderr, "mdb_txn_commit: out of memory.\n");
-          break;
-        default:
-          fprintf(stderr, "mdb_txn_commit: another error %d\n", res);
-      };
-      PL_fail;
+        switch(res) {
+          case EINVAL:
+            fprintf(stderr, "mdb_txn_commit: an invalid parameter was specified.\n");
+            break;
+          case ENOSPC:
+            fprintf(stderr, "mdb_txn_commit: no more disk space.\n");
+            break;
+          case EIO:
+            fprintf(stderr, "mdb_txn_commit: a low-level I/O error occurred while writing.\n");
+            break;
+          case ENOMEM:
+            fprintf(stderr, "mdb_txn_commit: out of memory.\n");
+            break;
+          default:
+            fprintf(stderr, "mdb_txn_commit: another error %d\n", res);
+        };
+        PL_fail;
     }
     PL_succeed;
 }
