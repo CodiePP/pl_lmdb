@@ -53,7 +53,7 @@ $(OBJDIR)/%.gpo : $(SRCDIR)/%.pl
 
 $(OBJDIR)/%.gpo : $(SRCDIR)/%.c
 	@echo "compiling $<"
-	$(GPLC) -c -C @DEFS@ -o $@ $<
+	$(GPLC) -c -C $(GP_CFLAGS) -C @DEFS@ -o $@ $<
 
 $(SRCDIR)/%.qlf : $(SRCDIR)/%.pl
 	@echo "compiling $<"
@@ -79,7 +79,7 @@ lib$(MODULE).a: $(OBJDIR) $(GP_OBJS)
 	$(RANLIB) $@
 top.gp: $(GP_OBJS) lib$(MODULE).a
 	@echo "Building GNU Prolog top"
-	$(GPLC) -o $@ --new-top-level src/gp-lmdb.pl lib$(MODULE).a -L -llmdb
+	$(GPLC) -o $@ --new-top-level src/gp-lmdb.pl lib$(MODULE).a -L "$(GP_LDLIBS)"
 
 check:
 	@echo "testing using SWI Prolog"
@@ -87,9 +87,9 @@ check:
 	swipl -l test/t4.pl -g test
 	@rm -f data.mdb lock.mdb
 	@echo "testing using GNU Prolog"
-	$(GPLC) -o t3.gp --global-size 500000 --trail-size 100000 test/t3_gp.pl test/t3.pl lib$(MODULE).a -L -llmdb
-	$(GPLC) -o t4.gp --global-size 500000 --trail-size 100000 test/t4_gp.pl test/t4.pl lib$(MODULE).a -L -llmdb
-	$(GPLC) -o t5.gp --global-size 500000 --trail-size 100000 test/t5_gp.pl test/t5.pl lib$(MODULE).a -L -llmdb
+	$(GPLC) -o t3.gp --global-size 500000 --trail-size 100000 test/t3_gp.pl test/t3.pl lib$(MODULE).a -L "$(GP_LDLIBS)"
+	$(GPLC) -o t4.gp --global-size 500000 --trail-size 100000 test/t4_gp.pl test/t4.pl lib$(MODULE).a -L "$(GP_LDLIBS)"
+	$(GPLC) -o t5.gp --global-size 500000 --trail-size 100000 test/t5_gp.pl test/t5.pl lib$(MODULE).a -L "$(GP_LDLIBS)"
 	./t3.gp
 	./t4.gp
 	@rm -f data.mdb lock.mdb

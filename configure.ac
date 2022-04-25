@@ -52,22 +52,24 @@ SWI_PLLIBDIR=$SWI_BASE/library
 fi
 
 if [[ $ARCH = "Darwin" ]]; then
-  SWI_BASE=/usr/local/opt/swi-prolog
-  if test -d "${SWI_BASE}"; then
-    MACHINE=$(uname -m)
-    SWI_CFLAGS="-I${SWI_BASE}/libexec/lib/swipl/include"
-    SWI_LIBS="-L${SWI_BASE}/libexec/lib/swipl/lib/${MACHINE}-darwin -lswipl"
-  else
-    AC_MSG_FAILURE([cannot find SWI Prolog])
-  fi
-  LIBLMDB_BASE=/usr/local/opt/lmdb
-  if test -d "${LIBLMDB_BASE}"; then
-    MACHINE=$(uname -m)
-    LMDB_CFLAGS="-I${LIBLMDB_BASE}/include"
-    LMDB_LIBS="-L${LIBLMDB_BASE}/lib -llmdb"
-  else
-    AC_MSG_FAILURE([cannot find LMDB])
-  fi
+  for D in /opt/homebrew/opt/swi-prolog /usr/local/opt/swi-prolog; do
+    if test -d "${D}"; then
+      SWI_BASE=$D
+      MACHINE=$(uname -m)
+      SWI_CFLAGS="-I${SWI_BASE}/libexec/lib/swipl/include"
+      SWI_LIBS="-L${SWI_BASE}/libexec/lib/swipl/lib/${MACHINE}-darwin -lswipl"
+    fi
+  done
+  for D in /opt/homebrew/opt/lmdb /usr/local/opt/lmdb; do
+    if test -d "${D}"; then
+      LIBLMDB_BASE=$D
+      MACHINE=$(uname -m)
+      LMDB_CFLAGS="-I${LIBLMDB_BASE}/include"
+      LMDB_LIBS="-L${LIBLMDB_BASE}/lib -llmdb"
+    fi
+  done
+  if [[ -z "$LIBLMDB_BASE" ]]; then AC_MSG_FAILURE([cannot find LMDB]); fi
+  if [[ -z "$SWI_BASE" ]]; then AC_MSG_FAILURE([cannot find SWI Prolog]); fi
 fi
 
 # Checks for header files.
