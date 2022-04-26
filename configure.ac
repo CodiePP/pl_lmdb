@@ -43,7 +43,8 @@ AC_SUBST(PLTARGET)
 
 if [[ $ARCH = "Linux" ]]; then
 PKG_PROG_PKG_CONFIG()
-PKG_CHECK_MODULES([SWI], [swipl lmdb])
+PKG_CHECK_MODULES([SWI], [swipl])
+PKG_CHECK_MODULES([LMDB], [lmdb])
 
 SWI_BASE=$($PKG_CONFIG --variable=PLBASE swipl)
 SWI_ARCH=$($PKG_CONFIG --variable=PLARCH swipl)
