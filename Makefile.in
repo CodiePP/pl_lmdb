@@ -53,7 +53,7 @@ $(OBJDIR)/%.gpo : $(SRCDIR)/%.pl
 
 $(OBJDIR)/%.gpo : $(SRCDIR)/%.c
 	@echo "compiling $<"
-	$(GPLC) -c -C $(GP_CFLAGS) -C @DEFS@ -o $@ $<
+	$(GPLC) -c -C "$(GP_CFLAGS) " -C @DEFS@ -o $@ $<
 
 $(SRCDIR)/%.qlf : $(SRCDIR)/%.pl
 	@echo "compiling $<"
