@@ -57,7 +57,7 @@ $(OBJDIR)/%.gpo : $(SRCDIR)/%.c
 
 $(SRCDIR)/%.qlf : $(SRCDIR)/%.pl
 	@echo "compiling $<"
-	$(SWIPL) -q -t "assertz(file_search_path(sbcl,'.')), qcompile(\"$<\")."
+	$(SWIPL) -q -t "asserta(file_search_path(sbcl,'.')), qcompile(\"$<\")."
 
 
 # rule to make it all

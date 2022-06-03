@@ -41,26 +41,24 @@ AC_SUBST(LMDB_LIBS)
 AC_SUBST(SOTARGET)
 AC_SUBST(PLTARGET)
 
-if [[ $ARCH = "Linux" ]]; then
 PKG_PROG_PKG_CONFIG()
+
+if [[ $ARCH = "Darwin" ]]; then
+  # you likely need to adjust these paths:
+  export PKG_CONFIG_PATH="${PKG_CONFIG_PATH}:${HOME}/.local/share/pkgconfig"
+fi
+
 PKG_CHECK_MODULES([SWI], [swipl])
-PKG_CHECK_MODULES([LMDB], [lmdb])
+if [[ $ARCH != "Darwin" ]]; then
+  PKG_CHECK_MODULES([LMDB], [lmdb])
+fi
 
 SWI_BASE=$($PKG_CONFIG --variable=PLBASE swipl)
 SWI_ARCH=$($PKG_CONFIG --variable=PLARCH swipl)
 SWI_SOLIBDIR=$SWI_BASE/lib/$SWI_ARCH
 SWI_PLLIBDIR=$SWI_BASE/library
-fi
 
 if [[ $ARCH = "Darwin" ]]; then
-  for D in /opt/homebrew/opt/swi-prolog /usr/local/opt/swi-prolog; do
-    if test -d "${D}"; then
-      SWI_BASE=$D
-      MACHINE=$(uname -m)
-      SWI_CFLAGS="-I${SWI_BASE}/libexec/lib/swipl/include"
-      SWI_LIBS="-L${SWI_BASE}/libexec/lib/swipl/lib/${MACHINE}-darwin -lswipl"
-    fi
-  done
   for D in /opt/homebrew/opt/lmdb /usr/local/opt/lmdb; do
     if test -d "${D}"; then
       LIBLMDB_BASE=$D
@@ -70,7 +68,6 @@ if [[ $ARCH = "Darwin" ]]; then
     fi
   done
   if [[ -z "$LIBLMDB_BASE" ]]; then AC_MSG_FAILURE([cannot find LMDB]); fi
-  if [[ -z "$SWI_BASE" ]]; then AC_MSG_FAILURE([cannot find SWI Prolog]); fi
 fi
 
 # Checks for header files.
